@@ -8,22 +8,27 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout (full)
         uses: actions/checkout@v4
         with:
-          lfs: true
+          fetch-depth: 0
+          lfs: false
+
+      - name: Ensure repo is NOT shallow
+        run: |
+          git rev-parse --is-shallow-repository || true
+          git fetch --unshallow || true
+          git fetch --all --tags --prune
+          git rev-parse --is-shallow-repository
 
       - name: Push to Hugging Face
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          HF_OWNER: mansour12120
-          HF_SPACE: justRepo
         run: |
           git config user.name "github-actions"
           git config user.email "actions@github.com"
 
-          # Add Hugging Face as remote (token used as password)
-          git remote add hf https://$HF_OWNER:$HF_TOKEN@huggingface.co/spaces/$HF_OWNER/$HF_SPACE
+          git remote remove hf 2>/dev/null || true
+          git remote add hf https://mansour12120:${HF_TOKEN}@huggingface.co/spaces/mansour12120/justRepo
 
-          # Push main -> main on the Space
-          git push hf main --force
+          git push hf HEAD:main --force
